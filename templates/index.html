@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="search-box">
+            <form method="GET" action="/search" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" name="q" placeholder="Search hosts..." 
+                           value="{{ search_term or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="sort">
+                        <option value="os_kernel" {% if current_sort != 'name' and current_sort != 'hostgroup' %}selected{% endif %}>OS + Kernel ↑</option>
+                        <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name</option>
+                        <option value="hostgroup" {% if current_sort == 'hostgroup' %}selected{% endif %}>Hostgroup</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="/?sort={{ current_sort or 'os_kernel' }}" class="btn btn-secondary w-100">Show All</a>
+                </div>
+            </form>
+        </div>
+
+        {% if search_term %}
+        <div class="alert alert-info">
+            Showing search results for: <strong>{{ search_term }}</strong>
+            <span class="text-muted">| Sorted by: 
+                {% if current_sort == 'os_kernel' %}OS + Kernel (oldest first)
+                {% elif current_sort == 'name' %}Name
+                {% elif current_sort == 'hostgroup' %}Hostgroup
+                {% endif %}
+            </span>
+            <a href="/export/csv?q={{ search_term }}&sort={{ current_sort }}" class="btn btn-sm btn-outline-success ms-2">Export CSV</a>
+        </div>
+        {% elif filter_type %}
+        <div class="alert alert-info">
+            Showing hosts filtered by {{ filter_type }}: <strong>{{ filter_value }}</strong>
+            <a href="/export/csv?{{ filter_type }}={{ filter_value }}" class="btn btn-sm btn-outline-success ms-2">Export CSV</a>
+        </div>
+        {% else %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>All Hosts ({{ hosts|length }})
+                <small class="text-muted fs-6">| Sorted by: 
+                    {% if current_sort == 'os_kernel' %}OS + Kernel (oldest first)
+                    {% elif current_sort == 'name' %}Name
+                    {% elif current_sort == 'hostgroup' %}Hostgroup
+                    {% endif %}
+                </small>
+            </h2>
+            <a href="/export/csv?sort={{ current_sort }}" class="btn btn-success">Export CSV</a>
+        </div>
+        {% endif %}
+
+        {% if hosts %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Hostgroup</th>
+                        <th>OS</th>
+                        <th>Kernel</th>
+                        <th>IP</th>
+                        <th>Last Report</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for host in hosts %}
+                    <tr>
+                        <td>
+                            <a href="/host/{{ host.name }}" class="text-decoration-none">
+                                {{ host.name }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if host.hostgroup %}
+                            <a href="/hostgroup/{{ host.hostgroup }}" class="badge bg-secondary text-decoration-none">
+                                {{ host.hostgroup }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ host.os or 'N/A' }}</td>
+                        <td><small>{{ host.kernel or 'N/A' }}</small></td>
+                        <td>{{ host.ip or 'N/A' }}</td>
+                        <td>
+                            {% if host.last_report %}
+                            <small>{{ host.last_report[:19] }}</small>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if host.status == 'OK' %}
+                            <span class="badge bg-success">{{ host.status }}</span>
+                            {% elif host.status == 'Warning' %}
+                            <span class="badge bg-warning text-dark">{{ host.status }}</span>
+                            {% elif host.status == 'Error' %}
+                            <span class="badge bg-danger">{{ host.status }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ host.status or 'Unknown' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            No hosts found.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}
